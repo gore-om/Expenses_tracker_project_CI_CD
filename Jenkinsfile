@@ -68,7 +68,8 @@ pipeline {
   }
 
   post {
-    always {
+  always {
+    script {
       sh 'docker image prune -f || true'
     }
   }
