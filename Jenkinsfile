@@ -3,20 +3,19 @@ pipeline {
 
   environment {
     APP_NAME = 'ledgerly'
-    ACR_NAME = credentials('AZURE_ACR_NAME')
-    ACR_LOGIN_SERVER = "${ACR_NAME}.azurecr.io"
-
-    AKS_RESOURCE_GROUP = credentials('AZURE_AKS_RESOURCE_GROUP')
-    AKS_CLUSTER_NAME = credentials('AZURE_AKS_CLUSTER_NAME')
-
+    ACR_NAME = 'ogccr'  
+    AKS_RESOURCE_GROUP = 'rg-az104-dev-eus'
+    AKS_CLUSTER_NAME = 'myogcck8scluster'
     K8S_NAMESPACE = 'ledgerly'
   }
 
   stages {
-
     stage('Checkout') {
       steps {
         checkout scm
+      }
+    }
+
 
         script {
           env.GIT_SHORT_SHA = sh(
@@ -45,31 +44,24 @@ pipeline {
     }
 
     stage('Azure Login') {
-      steps {
+  steps {
+    withCredentials([
+      string(credentialsId: 'azure-client-id', variable: 'AZURE_CLIENT_ID'),
+      string(credentialsId: 'azure-client-secret', variable: 'AZURE_CLIENT_SECRET'),
+      string(credentialsId: 'azure-tenant-id', variable: 'AZURE_TENANT_ID')
+    ]) {
+      sh '''
+        az login --service-principal \
+          -u $AZURE_CLIENT_ID \
+          -p $AZURE_CLIENT_SECRET \
+          --tenant $AZURE_TENANT_ID
 
-        withCredentials([
-          azureServicePrincipal(
-            credentialsId: 'AZURE_SERVICE_PRINCIPAL',
-            subscriptionIdVariable: 'AZURE_SUBSCRIPTION_ID',
-            clientIdVariable: 'AZURE_CLIENT_ID',
-            clientSecretVariable: 'AZURE_CLIENT_SECRET',
-            tenantIdVariable: 'AZURE_TENANT_ID'
-          )
-        ]) {
-
-          sh '''
-            az login --service-principal \
-              -u $AZURE_CLIENT_ID \
-              -p $AZURE_CLIENT_SECRET \
-              --tenant $AZURE_TENANT_ID
-
-            az account set --subscription $AZURE_SUBSCRIPTION_ID
-
-            az acr login --name $ACR_NAME
-          '''
-        }
-      }
+        az account set --subscription YOUR_SUBSCRIPTION_ID
+        az acr login --name $ACR_NAME
+      '''
     }
+  }
+}
 
     stage('Push Images') {
       steps {
