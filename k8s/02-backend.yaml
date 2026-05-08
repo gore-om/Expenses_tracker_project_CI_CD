@@ -1,3 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ledgerly-backend
+  namespace: ledgerly
+spec:
+  selector:
+    app: ledgerly-backend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -13,14 +26,10 @@ spec:
       labels:
         app: ledgerly-backend
     spec:
-      imagePullSecrets:
-        - name: acr-secret   # ✅ IMPORTANT FIX
-
       containers:
         - name: backend
-          image: ogccr.azurecr.io/ledgerly-backend:13-fc8100d
+          image: ogccr.azurecr.io/ledgerly-backend:latest
           imagePullPolicy: Always
-
           ports:
             - containerPort: 8080
 
@@ -46,20 +55,19 @@ spec:
             - name: CORS_ORIGIN
               value: "*"
 
-          # ✅ FIX: safer probes
-          livenessProbe:
-          httpGet:
-          path: /health
-          port: 8080
-          initialDelaySeconds: 60   # increase
-          periodSeconds: 20
-
           readinessProbe:
-          httpGet:
-          path: /ready
-          port: 8080
-          initialDelaySeconds: 30   # increase
-          periodSeconds: 10
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 8
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 20
+            periodSeconds: 20
 
           resources:
             requests:
@@ -68,4 +76,3 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
-              
