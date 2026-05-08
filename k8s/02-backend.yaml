@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: ogccr.azurecr.io/ledgerly-backend:latest
+          image: ogccr.azurecr.io/ledgerly-backend:15-ffecaae
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
