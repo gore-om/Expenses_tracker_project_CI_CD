@@ -26,9 +26,11 @@ spec:
       labels:
         app: ledgerly-backend
     spec:
+      imagePullSecrets:
+        - name: acr-secret
       containers:
         - name: backend
-          image: ogccr.azurecr.io/ledgerly-backend:15-ffecaae
+          image: ogccr.azurecr.io/ledgerly-backend:17-973d1cb   # IMPORTANT FIX
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -41,7 +43,7 @@ spec:
             - name: APP_VERSION
               valueFrom:
                 fieldRef:
-                  fieldPath: metadata.labels['pod-template-hash']
+                  fieldPath: metadata.name
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
