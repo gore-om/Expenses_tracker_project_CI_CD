@@ -68,7 +68,6 @@ app.get("/ready", async (_req, res) => {
    DB MIGRATION
 ========================= */
 async function migrate() {
-  await pool.query("CREATE EXTENSION IF NOT EXISTS pgcrypto;");
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -89,7 +88,7 @@ async function migrate() {
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS transactions (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      id UUID PRIMARY KEY,
       user_id UUID REFERENCES users(id) ON DELETE CASCADE,
       description TEXT NOT NULL,
       amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
