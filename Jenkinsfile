@@ -3,29 +3,29 @@ pipeline {
 
   environment {
     APP_NAME = 'ledgerly'
-    ACR_NAME = 'ogccr'  
+    ACR_NAME = 'ogccr'
+    ACR_LOGIN_SERVER = 'ogccr.azurecr.io'
+
     AKS_RESOURCE_GROUP = 'rg-az104-dev-eus'
     AKS_CLUSTER_NAME = 'myogcck8scluster'
     K8S_NAMESPACE = 'ledgerly'
   }
 
   stages {
+
     stage('Checkout') {
       steps {
         checkout scm
-      }
-    }
-
 
         script {
           env.GIT_SHORT_SHA = sh(
-            returnStdout: true,
-            script: 'git rev-parse --short HEAD'
+            script: 'git rev-parse --short HEAD',
+            returnStdout: true
           ).trim()
 
           env.RELEASE_VERSION = sh(
-            returnStdout: true,
-            script: 'cat VERSION'
+            script: 'cat VERSION',
+            returnStdout: true
           ).trim()
 
           env.APP_VERSION = env.RELEASE_VERSION
@@ -44,24 +44,23 @@ pipeline {
     }
 
     stage('Azure Login') {
-  steps {
-    withCredentials([
-      string(credentialsId: 'azure-client-id', variable: 'AZURE_CLIENT_ID'),
-      string(credentialsId: 'azure-client-secret', variable: 'AZURE_CLIENT_SECRET'),
-      string(credentialsId: 'azure-tenant-id', variable: 'AZURE_TENANT_ID')
-    ]) {
-      sh '''
-        az login --service-principal \
-          -u $AZURE_CLIENT_ID \
-          -p $AZURE_CLIENT_SECRET \
-          --tenant $AZURE_TENANT_ID
+      steps {
+        withCredentials([
+          string(credentialsId: 'azure-client-id', variable: 'AZURE_CLIENT_ID'),
+          string(credentialsId: 'azure-client-secret', variable: 'AZURE_CLIENT_SECRET'),
+          string(credentialsId: 'azure-tenant-id', variable: 'AZURE_TENANT_ID')
+        ]) {
+          sh """
+            az login --service-principal \
+              -u $AZURE_CLIENT_ID \
+              -p $AZURE_CLIENT_SECRET \
+              --tenant $AZURE_TENANT_ID
 
-        az account set --subscription YOUR_SUBSCRIPTION_ID
-        az acr login --name $ACR_NAME
-      '''
+            az acr login --name $ACR_NAME
+          """
+        }
+      }
     }
-  }
-}
 
     stage('Push Images') {
       steps {
@@ -74,7 +73,6 @@ pipeline {
 
     stage('Deploy To AKS') {
       steps {
-
         sh """
           az aks get-credentials \
             --resource-group $AKS_RESOURCE_GROUP \
@@ -83,11 +81,10 @@ pipeline {
         """
 
         sh """
-          kubectl create namespace $K8S_NAMESPACE \
-            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create namespace $K8S_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
         """
 
-        sh 'kubectl -n $K8S_NAMESPACE apply -f k8s/'
+        sh "kubectl -n $K8S_NAMESPACE apply -f k8s/"
 
         sh """
           kubectl -n $K8S_NAMESPACE set image deployment/ledgerly-frontend \
@@ -112,9 +109,9 @@ pipeline {
 
   post {
     always {
-      script {
-        sh 'docker image prune -f || true'
-      }
+      sh 'docker image prune -f || true'
     }
   }
 }
+
+
