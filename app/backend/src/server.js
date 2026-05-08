@@ -15,8 +15,6 @@ const logger = pino({
 });
 
 const port = Number(process.env.PORT || 8080);
-const tokenSecret =
-  process.env.TOKEN_SECRET || "local-dev-token-secret-change-me";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -33,16 +31,13 @@ app.use(pinoHttp({ logger }));
 
 // Optional API rewrite
 app.use((req, _res, next) => {
-  if (req.url === "/api") {
-    req.url = "/";
-  } else if (req.url.startsWith("/api/")) {
-    req.url = req.url.slice(4);
-  }
+  if (req.url === "/api") req.url = "/";
+  else if (req.url.startsWith("/api/")) req.url = req.url.slice(4);
   next();
 });
 
 /* =========================
-   SAFE HEALTH CHECK (NO DB)
+   HEALTH (NO DB)
 ========================= */
 app.get("/health", (_req, res) => {
   res.json({
@@ -53,7 +48,7 @@ app.get("/health", (_req, res) => {
 });
 
 /* =========================
-   READY CHECK (LIGHT DB TEST)
+   READY CHECK
 ========================= */
 app.get("/ready", async (_req, res) => {
   try {
@@ -65,13 +60,12 @@ app.get("/ready", async (_req, res) => {
 });
 
 /* =========================
-   DB MIGRATION
+   DB MIGRATION (NO EXTENSIONS)
 ========================= */
 async function migrate() {
-
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      id UUID PRIMARY KEY,
       name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
@@ -99,6 +93,9 @@ async function migrate() {
   `);
 }
 
+/* =========================
+   START SERVER (STABLE)
+========================= */
 async function startServer() {
   try {
     await migrate();
@@ -109,8 +106,6 @@ async function startServer() {
     });
   } catch (error) {
     logger.error(error, "startup failed - retrying in 10s");
-
-    // IMPORTANT: prevent CrashLoopBackOff storm
     setTimeout(startServer, 10000);
   }
 }
