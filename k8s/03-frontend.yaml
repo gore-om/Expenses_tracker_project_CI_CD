@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: REPLACE_WITH_ACR/ledgerly-frontend:latest
+          image: ogccr.azurecr.io/ledgerly-frontend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 80

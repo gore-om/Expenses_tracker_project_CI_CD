@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: REPLACE_WITH_ACR/ledgerly-backend:latest
+          image: ogccr.azurecr.io/ledgerly-backend:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
