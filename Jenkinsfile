@@ -18,17 +18,9 @@ pipeline {
         checkout scm
 
         script {
-          env.GIT_SHORT_SHA = sh(
-            script: 'git rev-parse --short HEAD',
-            returnStdout: true
-          ).trim()
+          env.GIT_SHORT_SHA = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+          env.RELEASE_VERSION = sh(script: 'cat VERSION', returnStdout: true).trim()
 
-          env.RELEASE_VERSION = sh(
-            script: 'cat VERSION',
-            returnStdout: true
-          ).trim()
-
-          env.APP_VERSION = env.RELEASE_VERSION
           env.IMAGE_TAG = "${env.BUILD_NUMBER}-${env.GIT_SHORT_SHA}"
         }
       }
@@ -73,6 +65,7 @@ pipeline {
 
     stage('Deploy To AKS') {
       steps {
+
         sh """
           az aks get-credentials \
             --resource-group $AKS_RESOURCE_GROUP \
@@ -84,23 +77,26 @@ pipeline {
           kubectl create namespace $K8S_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
         """
 
-        sh "kubectl -n $K8S_NAMESPACE apply -f k8s/"
+        # Apply ONLY infra (NO deployments here)
+        sh """
+          kubectl -n $K8S_NAMESPACE apply -f k8s/
+        """
 
+        # Update frontend image
         sh """
           kubectl -n $K8S_NAMESPACE set image deployment/ledgerly-frontend \
           frontend=$ACR_LOGIN_SERVER/$APP_NAME-frontend:$IMAGE_TAG
         """
 
+        # Update backend image
         sh """
           kubectl -n $K8S_NAMESPACE set image deployment/ledgerly-backend \
           backend=$ACR_LOGIN_SERVER/$APP_NAME-backend:$IMAGE_TAG
         """
 
+        # Wait for rollout (fail pipeline if broken)
         sh """
           kubectl -n $K8S_NAMESPACE rollout status deployment/ledgerly-frontend --timeout=180s
-        """
-
-        sh """
           kubectl -n $K8S_NAMESPACE rollout status deployment/ledgerly-backend --timeout=180s
         """
       }
@@ -113,5 +109,3 @@ pipeline {
     }
   }
 }
-
-
