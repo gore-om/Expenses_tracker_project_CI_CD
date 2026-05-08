@@ -25,8 +25,8 @@ pipeline {
 
     stage('Build Images') {
       steps {
-        sh 'docker build -t $ACR_LOGIN_SERVER/$APP_NAME-frontend:$IMAGE_TAG ./frontend'
-        sh 'docker build -t $ACR_LOGIN_SERVER/$APP_NAME-backend:$IMAGE_TAG ./backend'
+        sh 'docker build -t $ACR_LOGIN_SERVER/$APP_NAME-frontend:$IMAGE_TAG ./app/frontend'
+        sh 'docker build -t $ACR_LOGIN_SERVER/$APP_NAME-backend:$IMAGE_TAG ./app/backend'
       }
     }
 
