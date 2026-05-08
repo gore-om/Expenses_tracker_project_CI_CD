@@ -61,16 +61,17 @@ pipeline {
         sh 'kubectl -n $K8S_NAMESPACE set image deployment/ledgerly-frontend frontend=$ACR_LOGIN_SERVER/$APP_NAME-frontend:$IMAGE_TAG'
         sh 'kubectl -n $K8S_NAMESPACE set image deployment/ledgerly-backend backend=$ACR_LOGIN_SERVER/$APP_NAME-backend:$IMAGE_TAG'
         sh 'kubectl -n $K8S_NAMESPACE set env deployment/ledgerly-backend APP_VERSION=$APP_VERSION'
-        sh 'kubectl -n $K8S_NAMESPACE rollout status deployment/ledgerly-frontend --timeout=180s'
-        sh 'kubectl -n $K8S_NAMESPACE rollout status deployment/ledgerly-backend --timeout=180s'
-      }
+        sh 'kubectl -n $K8S_NAMESPACE rollout status deployment/ledgerly-}
+
+ }
     }
   }
 
   post {
-  always {
-    script {
-      sh 'docker image prune -f || true'
+    always {
+      script {
+        sh 'docker image prune -f || true'
+      }
     }
   }
 }
