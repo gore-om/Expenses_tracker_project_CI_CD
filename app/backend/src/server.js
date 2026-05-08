@@ -100,28 +100,20 @@ async function migrate() {
   `);
 }
 
-/* =========================
-   START SERVER (IMPORTANT FIX)
-========================= */
-async function start() {
+async function startServer() {
   try {
     await migrate();
-    logger.info("DB migration completed");
-  } catch (err) {
-    logger.error(err, "DB migration failed (continuing anyway)");
-  }
+    logger.info("Database migration completed");
 
-  app.listen(port, "0.0.0.0", () => {
-    logger.info({ port }, "ledgerly-api started");
-  });
+    app.listen(port, "0.0.0.0", () => {
+      logger.info({ port }, "ledgerly-api started");
+    });
+  } catch (error) {
+    logger.error(error, "startup failed - retrying in 10s");
+
+    // IMPORTANT: prevent CrashLoopBackOff storm
+    setTimeout(startServer, 10000);
+  }
 }
 
-start();
-
-/* =========================
-   ERROR HANDLER
-========================= */
-app.use((error, _req, res, _next) => {
-  logger.error(error);
-  res.status(500).json({ message: "Unexpected server error" });
-});
+startServer();

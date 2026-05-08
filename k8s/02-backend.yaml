@@ -47,21 +47,19 @@ spec:
               value: "*"
 
           # ✅ FIX: safer probes
-          readinessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 25
-            periodSeconds: 10
-            failureThreshold: 5
-
           livenessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 60
-            periodSeconds: 20
-            failureThreshold: 3
+          httpGet:
+          path: /health
+          port: 8080
+          initialDelaySeconds: 60   # increase
+          periodSeconds: 20
+
+          readinessProbe:
+          httpGet:
+          path: /ready
+          port: 8080
+          initialDelaySeconds: 30   # increase
+          periodSeconds: 10
 
           resources:
             requests:
