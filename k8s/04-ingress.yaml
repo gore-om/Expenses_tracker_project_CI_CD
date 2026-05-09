@@ -8,12 +8,13 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/proxy-body-size: "2m"
 spec:
+  ingressClassName: nginx
   tls:
     - hosts:
-        - expense.example.com
+        - riskybusiness.online
       secretName: ledgerly-tls
   rules:
-    - host: expense.example.com
+    - host: riskybusiness.online
       http:
         paths:
           - path: /api
