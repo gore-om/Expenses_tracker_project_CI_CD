@@ -37,7 +37,6 @@ pipeline {
     stage('Checkout') {
       steps {
         checkout scm
-        sh 'git submodule update --init --recursive'
         script {
           env.GIT_SHORT_SHA = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
           env.RELEASE_VERSION = sh(script: 'cat VERSION', returnStdout: true).trim()
