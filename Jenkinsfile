@@ -227,6 +227,8 @@ pipeline {
               kubectl -n "$K8S_NAMESPACE" get pods -o wide
               kubectl -n "$K8S_NAMESPACE" describe deployment ledgerly-backend
               kubectl -n "$K8S_NAMESPACE" describe pods -l app=ledgerly-backend
+              kubectl -n "$K8S_NAMESPACE" logs -l app=ledgerly-backend --tail=200 --all-containers=true || true
+              kubectl -n "$K8S_NAMESPACE" logs -l app=ledgerly-backend --tail=200 --all-containers=true --previous || true
               kubectl -n "$K8S_NAMESPACE" get events --sort-by=.lastTimestamp
               exit 1
             fi

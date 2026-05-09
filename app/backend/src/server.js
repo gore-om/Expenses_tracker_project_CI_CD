@@ -34,10 +34,9 @@ app.use((request, _response, next) => {
 });
 
 async function migrate() {
-  await pool.query("CREATE EXTENSION IF NOT EXISTS pgcrypto;");
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      id UUID PRIMARY KEY,
       name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
@@ -53,7 +52,7 @@ async function migrate() {
   `);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS transactions (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      id UUID PRIMARY KEY,
       user_id UUID REFERENCES users(id) ON DELETE CASCADE,
       description TEXT NOT NULL,
       amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
@@ -173,10 +172,10 @@ app.post("/auth/register", async (request, response) => {
   }
 
   const result = await pool.query(
-    `INSERT INTO users (name, email, password_hash)
-     VALUES ($1, $2, $3)
+    `INSERT INTO users (id, name, email, password_hash)
+     VALUES ($1, $2, $3, $4)
      RETURNING id, name, email, monthly_budget, currency, savings_goal, preferred_category, timezone, weekly_digest, spend_alerts, created_at`,
-    [name, email, hashPassword(password)],
+    [crypto.randomUUID(), name, email, hashPassword(password)],
   ).catch((error) => {
     if (error.code === "23505") {
       return null;
@@ -258,11 +257,12 @@ app.post("/transactions", requireUser, async (request, response) => {
 
   const result = await pool.query(
     `
-      INSERT INTO transactions (user_id, description, amount, type, category)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO transactions (id, user_id, description, amount, type, category)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING id, description, amount, type, category, created_at;
     `,
     [
+      crypto.randomUUID(),
       request.user.id,
       String(request.body.description).trim(),
       Number(request.body.amount),
