@@ -16,7 +16,7 @@ services:
       retries: 5
 
   backend:
-    build: ./backend
+    build: ./app/backend
     environment:
       PORT: 8080
       APP_ENV: local
@@ -35,7 +35,7 @@ services:
           - ledgerly-backend
 
   frontend:
-    build: ./frontend
+    build: ./app/frontend
     ports:
       - "3000:80"
     depends_on:

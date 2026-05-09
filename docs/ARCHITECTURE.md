@@ -36,14 +36,30 @@ GitHub sends the webhook to Jenkins, Jenkins builds new images, deploys to AKS a
 
 ## Required Jenkins Credentials
 
-- `AZURE_SERVICE_PRINCIPAL`: Azure service principal credential.
-- `AZURE_ACR_NAME`: ACR name without `.azurecr.io`.
-- `AZURE_AKS_RESOURCE_GROUP`: AKS resource group name.
-- `AZURE_AKS_CLUSTER_NAME`: AKS cluster name.
+- `azure-client-id`: Azure service principal application/client ID.
+- `azure-client-secret`: Azure service principal client secret.
+- `azure-tenant-id`: Azure tenant ID.
+- `azure-subscription-id`: Azure subscription ID.
+- `postgres-admin-password`: PostgreSQL administrator password used by Terraform and the AKS `ledgerly-secrets` secret.
+
+The Jenkins build parameters provide the Azure resource names used by Terraform:
+
+- `RUN_TERRAFORM`
+- `APPLY_TERRAFORM`
+- `RESOURCE_GROUP_NAME`
+- `ACR_NAME`
+- `AKS_NAME`
+- `POSTGRES_SERVER_NAME`
+- `POSTGRES_HOST`
+- `POSTGRES_DATABASE`
+- `POSTGRES_USER`
+- `AZURE_LOCATION`
+
+For the recommended manual-infra flow, create Terraform infrastructure from your local terminal, then run Jenkins with `RUN_TERRAFORM=false` and provide the output values as Jenkins parameters.
 
 ## Kubernetes Secrets
 
-Create the production database secret before deploying. Keep the example in `docs/ledgerly-secret.example.yaml`; do not put a placeholder secret inside `k8s/` because Jenkins applies that directory.
+Jenkins creates or updates the production database secret during deployment from Terraform outputs and the `postgres-admin-password` credential. Keep the example in `docs/ledgerly-secret.example.yaml`; do not put a placeholder secret inside `k8s/`.
 
 ```bash
 kubectl -n ledgerly create secret generic ledgerly-secrets \

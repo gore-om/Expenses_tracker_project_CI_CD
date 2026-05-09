@@ -13,12 +13,9 @@ spec:
       labels:
         app: ledgerly-frontend
     spec:
-      imagePullSecrets:
-        - name: acr-secret   # ✅ FIX
-
       containers:
         - name: frontend
-          image: ogccr.azurecr.io/ledgerly-frontend:13-fc8100d
+          image: ledgerly-placeholder.azurecr.io/ledgerly-frontend:latest
           imagePullPolicy: Always
 
           ports:

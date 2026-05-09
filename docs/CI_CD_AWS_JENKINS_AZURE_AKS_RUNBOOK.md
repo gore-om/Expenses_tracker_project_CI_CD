@@ -62,6 +62,7 @@ Install on the EC2 instance:
 - Azure CLI
 - kubectl
 - Git
+- Terraform
 
 The Jenkins user must be able to run Docker:
 
@@ -135,41 +136,63 @@ DB_SSL=true
 
 ## Step 4: Configure Jenkins Credentials
 
-Create these Jenkins credentials:
+Create these Jenkins secret text credentials:
 
 ```text
-AZURE_SERVICE_PRINCIPAL
-AZURE_ACR_NAME
-AZURE_AKS_RESOURCE_GROUP
-AZURE_AKS_CLUSTER_NAME
+azure-client-id
+azure-client-secret
+azure-tenant-id
+azure-subscription-id
+postgres-admin-password
 ```
 
-`AZURE_SERVICE_PRINCIPAL` should contain:
+The Azure values come from a service principal:
 
 ```text
-subscription id
-tenant id
 client id
 client secret
+tenant id
+subscription id
 ```
 
-The current `Jenkinsfile` expects those credential IDs.
+The `postgres-admin-password` value is used by Terraform for Azure PostgreSQL and by Jenkins to create the AKS `ledgerly-secrets` secret. Use a URL-safe password for this project, because the pipeline builds a PostgreSQL connection string from it.
 
-## Step 5: Create Kubernetes Secret
+The Jenkins job also exposes these build parameters:
 
-Before the first Jenkins deployment, create the namespace and database secret:
+```text
+RUN_TERRAFORM
+APPLY_TERRAFORM
+AZURE_LOCATION
+RESOURCE_GROUP_NAME
+ACR_NAME
+AKS_NAME
+POSTGRES_SERVER_NAME
+POSTGRES_HOST
+POSTGRES_DATABASE
+POSTGRES_USER
+```
+
+Recommended beginner flow:
+
+1. Create infrastructure manually from VS Code or Git Bash using Terraform.
+2. Run Jenkins with `RUN_TERRAFORM=false`.
+3. Fill `RESOURCE_GROUP_NAME`, `ACR_NAME`, `AKS_NAME`, `POSTGRES_HOST`, `POSTGRES_DATABASE` and `POSTGRES_USER` from Terraform outputs.
+
+Alternative Jenkins-managed flow:
+
+1. Run Jenkins with `RUN_TERRAFORM=true`.
+2. For the first run, also enable `APPLY_TERRAFORM=true`.
+3. For later app-only deployments, keep `RUN_TERRAFORM=true` and `APPLY_TERRAFORM=false` only if Jenkins has access to the same Terraform state.
+
+## Step 5: Kubernetes Secret
+
+Jenkins creates the namespace and database secret automatically during the deploy stage:
 
 ```bash
-az aks get-credentials \
-  --resource-group <AKS_RESOURCE_GROUP> \
-  --name <AKS_CLUSTER_NAME> \
-  --overwrite-existing
-
-kubectl create namespace ledgerly --dry-run=client -o yaml | kubectl apply -f -
-
 kubectl -n ledgerly create secret generic ledgerly-secrets \
   --from-literal=DATABASE_URL='postgres://USER:PASSWORD@HOST:5432/DBNAME' \
-  --from-literal=DB_SSL='true'
+  --from-literal=DB_SSL='true' \
+  --dry-run=client -o yaml | kubectl apply -f -
 ```
 
 Do not commit real secrets to GitHub.
@@ -306,16 +329,17 @@ Jenkins should:
 
 1. Checkout code.
 2. Read `VERSION`.
-3. Build frontend Docker image.
-4. Build backend Docker image.
-5. Login to Azure.
-6. Login to ACR.
-7. Push images to ACR.
-8. Get AKS credentials.
-9. Apply Kubernetes manifests.
-10. Update deployment images.
-11. Set backend `APP_VERSION`.
-12. Wait for rollout.
+3. Login to Azure.
+4. Initialize, validate and plan Terraform.
+5. Apply Terraform when `APPLY_TERRAFORM` is enabled.
+6. Read ACR, AKS and PostgreSQL values from Terraform outputs.
+7. Build frontend and backend Docker images.
+8. Login to ACR and push images.
+9. Get AKS credentials.
+10. Create or update the Kubernetes database secret.
+11. Apply Kubernetes manifests.
+12. Update deployment images and backend `APP_VERSION`.
+13. Wait for rollout.
 
 ## Step 11: Test Automatic Pipeline
 
