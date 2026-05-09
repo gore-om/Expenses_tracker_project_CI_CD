@@ -215,8 +215,21 @@ pipeline {
             kubectl -n "$K8S_NAMESPACE" set env deployment/ledgerly-backend \
               APP_VERSION="$RELEASE_VERSION"
 
-            kubectl -n "$K8S_NAMESPACE" rollout status deployment/ledgerly-frontend --timeout=180s
-            kubectl -n "$K8S_NAMESPACE" rollout status deployment/ledgerly-backend --timeout=180s
+            if ! kubectl -n "$K8S_NAMESPACE" rollout status deployment/ledgerly-frontend --timeout=180s; then
+              kubectl -n "$K8S_NAMESPACE" get pods -o wide
+              kubectl -n "$K8S_NAMESPACE" describe deployment ledgerly-frontend
+              kubectl -n "$K8S_NAMESPACE" describe pods -l app=ledgerly-frontend
+              kubectl -n "$K8S_NAMESPACE" get events --sort-by=.lastTimestamp
+              exit 1
+            fi
+
+            if ! kubectl -n "$K8S_NAMESPACE" rollout status deployment/ledgerly-backend --timeout=180s; then
+              kubectl -n "$K8S_NAMESPACE" get pods -o wide
+              kubectl -n "$K8S_NAMESPACE" describe deployment ledgerly-backend
+              kubectl -n "$K8S_NAMESPACE" describe pods -l app=ledgerly-backend
+              kubectl -n "$K8S_NAMESPACE" get events --sort-by=.lastTimestamp
+              exit 1
+            fi
           '''
         }
       }
