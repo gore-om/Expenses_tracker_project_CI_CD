@@ -18,6 +18,11 @@ metadata:
   namespace: ledgerly
 spec:
   replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 100%
   selector:
     matchLabels:
       app: ledgerly-backend

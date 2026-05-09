@@ -192,10 +192,19 @@ pipeline {
               --dry-run=client -o yaml | kubectl apply -f -
             set -x
 
-            kubectl apply -f k8s/00-namespace.yaml
-            kubectl apply -f k8s/02-backend.yaml
-            kubectl apply -f k8s/03-frontend.yaml
-            kubectl apply -f k8s/04-ingress.yaml
+            mkdir -p .rendered-k8s
+            cp k8s/00-namespace.yaml .rendered-k8s/00-namespace.yaml
+            cp k8s/02-backend.yaml .rendered-k8s/02-backend.yaml
+            cp k8s/03-frontend.yaml .rendered-k8s/03-frontend.yaml
+            cp k8s/04-ingress.yaml .rendered-k8s/04-ingress.yaml
+
+            sed -i "s#ledgerly-placeholder.azurecr.io/ledgerly-frontend:latest#$ACR_LOGIN_SERVER/$APP_NAME-frontend:$IMAGE_TAG#g" .rendered-k8s/03-frontend.yaml
+            sed -i "s#ledgerly-placeholder.azurecr.io/ledgerly-backend:latest#$ACR_LOGIN_SERVER/$APP_NAME-backend:$IMAGE_TAG#g" .rendered-k8s/02-backend.yaml
+
+            kubectl apply -f .rendered-k8s/00-namespace.yaml
+            kubectl apply -f .rendered-k8s/02-backend.yaml
+            kubectl apply -f .rendered-k8s/03-frontend.yaml
+            kubectl apply -f .rendered-k8s/04-ingress.yaml
 
             kubectl -n "$K8S_NAMESPACE" set image deployment/ledgerly-frontend \
               frontend="$ACR_LOGIN_SERVER/$APP_NAME-frontend:$IMAGE_TAG"
